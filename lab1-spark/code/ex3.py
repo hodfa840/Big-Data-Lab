@@ -5,27 +5,33 @@ import sys
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
-sc = SparkContext(appName='ex3')
+sc = SparkContext(appName='ex')
 
-temperature= sc.textFile("data/temperature-readings.csv")
+temperature= sc.textFile("data/temperature-readings.csv").cache()
 
-lines = temperature.map(lambda line: line.split(";"))
-#output format Year, month, station number, average monthly temperature
-Year_Mon_temp = lines.map(lambda x :((x[1],x[0]),(float(x[3]))))
-print(Year_Mon_temp.take(20))
-daily_average = Year_Mon_temp.groupByKey().mapValues(lambda x: (max(x)+min(x))/2)
-print(daily_average.take(20))
+lines = temperature.map(lambda x: x.split(";"))
 
-#calculating monthly average
-#map as (year, month, station_no), (daily_avg, 1)
-monthly_ave = daily_average.map(lambda x: ((x[0][0][0:4],x[0][0][5:7],x[0][1]),(x[1],1))).\
-    reduceByKey(lambda x,y: (x[0] + y[0], x[1] + y[1])).map(lambda x: (x[0], x[1][0]/x[1][1])).sortByKey(False)
+#temperature = temperature.sample(False,0.01)
 
-print(monthly_ave.take(20))
+temperature=lines.map(lambda x: ((int(x[1][0:4]) ,int(x[1][5:7]),int(x[1][8:10] ) ),  ( x[0]  , float(x[3]))))
+
+# filter
+select_temperature = temperature.filter(lambda x: x[0][0]>= 1960 and x[0][0]<=2014 )
+
+select_temperature = select_temperature.map(lambda x: ((x[0][0],x[0][1],x[0][2],x[1][0]), (x[1][1],x[1][1])))
+# #writing a function to calculate max and min together
 #
-monthly_ave = daily_average.map(lambda x:((x[0][0][0:4],x[0][0][5:7],x[0][1]),(x[1],1)))
-#
-monthly_avg= monthly_ave.filter(lambda x: int(x[0][0])>1960 and int(x[0][0])<2014)
-# #print(monthly_ave.take(20))
-monthly_ave.saveAsTextFile("./res/ex3")
-print(monthly_avg.collect())
+def min_and_max(a,b):
+
+    minimum = a[0] if a[0]<b[0] else b[0]
+    maximum = b[1] if a[1]<b[1] else b[1]
+    return (minimum,maximum)
+
+
+select_temperature = select_temperature.reduceByKey(min_and_max)
+select_temperature1 = select_temperature.map(lambda x: ((x[0][0],x[0][1],x[0][3]),(sum(x[1]),2)))
+
+ave = select_temperature1.reduceByKey(lambda a, b: (a[0]+b[0], a[1]+b[1])).map(lambda x: (x[0], round(x[1][0]/x[1][1], ndigits=3))).sortByKey(ascending=False)
+
+ave.saveAsTextFile("assignment3_updated")
+print(ave.collect())
