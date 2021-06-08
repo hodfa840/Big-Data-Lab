@@ -24,7 +24,7 @@ select_temperature = select_temperature.map(lambda x: ((x[0][0],x[0][1],x[0][2],
 def min_and_max(a,b):
 
     minimum = a[0] if a[0]<b[0] else b[0]
-    maximum = b[1] if a[1]<b[1] else b[1]
+    maximum = b[1] if a[1]<b[1] else a[1]
     return (minimum,maximum)
 
 
