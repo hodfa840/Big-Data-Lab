@@ -35,8 +35,8 @@ def gauss_kernel(distance, days, time):
     dist_weight = exp(-(distance/h_distance)**2)
     date_weight = exp(-(days/h_date)**2)
     time_weight = exp(-(time/h_time)**2)
-   # return dist_weight + date_weight + time_weight
-    return dist_weight * date_weight * time_weight
+    return dist_weight + date_weight + time_weight
+    #return dist_weight * date_weight * time_weight
 
 
 h_distance = 100# Up to you
@@ -68,7 +68,7 @@ temperature = temperature.map(lambda x: (
                             )).cache()
 
 stdoutOrigin=sys.stdout
-sys.stdout = open("sum_result2h.txt", "w")
+sys.stdout = open("sum_result.txt", "w")
 #sys.stdout = open("product_result.txt", "w")
 for time in ["24:00:00", "22:00:00", "20:00:00", "18:00:00", "16:00:00", "14:00:00",
 "12:00:00", "10:00:00", "08:00:00", "06:00:00", "04:00:00"]:
